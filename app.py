@@ -49,7 +49,21 @@ pipes = {
 }
 
 
+
+
 async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    """draw image with text or image by sdxl-turbo
+
+    HTTP POST:
+    ::
+        {
+            "text": "panda"
+            "image": "data:image/png;base64,xxxxx"
+        }
+
+    Returns:
+        image bytes in png format
+    """
     data = await request.json()
     assert data["text"], "text is required"
     prompt = data["text"]
