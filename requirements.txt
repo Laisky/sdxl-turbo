@@ -1,4 +1,6 @@
 diffusers
+aiohttp
+-f https://download.pytorch.org/whl/torch_stable.html torch==2.1.1+cu118
 transformers
 accelerate
-gradio
+pillow
