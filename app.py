@@ -40,20 +40,20 @@ pipes = {
 
 async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
     data = await request.json()
-    pipe = pipes[data["type"]]
+    assert data["text"], "text is required"
+    prompt = data["text"]
+
     resp: aiohttp.web.Response
-    if data["pipe"] == "txt2img":
-        text = data["text"]
-        image = pipe(text)
-        resp = aiohttp.web.Response(body=image, content_type="image/png")
-    elif data["pipe"] == "img2img":
+    if data['image']:
         base64_image: str = data["image"]
         image_bytes = base64.b64decode(base64_image)
         image = load_image(Image.open(io.BytesIO(image_bytes)))
-        image = pipe(image)
+        image = pipes["img2img"](prompt, image)[0]
         resp = aiohttp.web.Response(body=image, content_type="image/png")
     else:
-        resp = aiohttp.web.HTTPBadRequest(reason="Invalid pipe")
+        image = pipes["txt2img"](prompt)
+        resp = aiohttp.web.Response(body=image, content_type="image/png")
+
 
     return resp
 
