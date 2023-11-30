@@ -49,8 +49,6 @@ pipes = {
 }
 
 
-
-
 async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """draw image with text or image by sdxl-turbo
 
