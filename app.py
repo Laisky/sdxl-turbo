@@ -12,8 +12,11 @@ os.environ[
 ] = "localhost,127.0.0.1,100.64.0.0/10,192.168.0.0/16,10.0.0.0/8,127.0.0.0/8,snake-carp.ts.net"
 
 
-from diffusers import AutoPipelineForText2Image, AutoPipelineForImage2Image
-from diffusers.utils import load_image
+from diffusers.pipelines.auto_pipeline import (
+    AutoPipelineForText2Image,
+    AutoPipelineForImage2Image,
+)
+from diffusers.utils.loading_utils import load_image
 from PIL import Image
 import base64
 import io
@@ -21,12 +24,13 @@ import torch
 import aiohttp.web
 import random
 
+DEVICE: str
 if torch.cuda.is_available():
-    device = "cuda"
+    DEVICE = "cuda"
 elif torch.backends.mps.is_available():
-    device = "mps"
+    DEVICE = "mps"
 else:
-    device = "cpu"
+    DEVICE = "cpu"
 
 
 pipes = {
@@ -35,13 +39,13 @@ pipes = {
         torch_dtype=torch.float16,
         variant="fp16",
         requires_safety_checker=False,
-    ).to("cuda"),
+    ).to(DEVICE),
     "img2img": AutoPipelineForImage2Image.from_pretrained(
         "stabilityai/sdxl-turbo",
         torch_dtype=torch.float16,
         variant="fp16",
         requires_safety_checker=False,
-    ).to("cuda"),
+    ).to(DEVICE),
 }
 
 
@@ -50,7 +54,7 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
     assert data["text"], "text is required"
     prompt = data["text"]
 
-    generator = torch.Generator("cuda").manual_seed(random.randint(0, 1000000))
+    generator = torch.Generator(DEVICE).manual_seed(random.randint(0, 1000000))
 
     resp: aiohttp.web.Response
     if data.get("image"):
