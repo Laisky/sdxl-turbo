@@ -14,6 +14,9 @@ os.environ[
 
 from diffusers import AutoPipelineForText2Image, AutoPipelineForImage2Image
 from diffusers.utils import load_image
+from PIL import Image
+import base64
+import io
 import torch
 import aiohttp.web
 
@@ -44,7 +47,9 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
         image = pipe(text)
         resp = aiohttp.web.Response(body=image, content_type="image/png")
     elif data["pipe"] == "img2img":
-        image = load_image(data["image"])
+        base64_image: str = data["image"]
+        image_bytes = base64.b64decode(base64_image)
+        image = load_image(Image.open(io.BytesIO(image_bytes)))
         image = pipe(image)
         resp = aiohttp.web.Response(body=image, content_type="image/png")
     else:
