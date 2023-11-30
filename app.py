@@ -50,18 +50,6 @@ pipes = {
 
 
 async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
-    """draw image with text or image by sdxl-turbo
-
-    HTTP POST:
-    ::
-        {
-            "text": "panda"
-            "image": "data:image/png;base64,xxxxx"
-        }
-
-    Returns:
-        image bytes in png format
-    """
     data = await request.json()
     assert data["text"], "text is required"
     prompt = data["text"]
@@ -80,9 +68,10 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
             prompt=prompt,
             image=src_image,
             generator=generator,
-            height=512,
-            width=512,
+            height=1024,
+            width=1024,
             guidance_scale=0.5,
+            strength=0.8,
             num_inference_steps=4,
         ).images[0]
 
@@ -97,6 +86,7 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
             height=512,
             width=512,
             guidance_scale=0.5,
+            strength=0.1,
             num_inference_steps=4,
         ).images[0]
         # convert to png
@@ -110,4 +100,4 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
 if __name__ == "__main__":
     app = aiohttp.web.Application()
     app.add_routes([aiohttp.web.post("/predict", handler)])
-    aiohttp.web.run_app(app, host="100.102.187.66", port=7861)
+    aiohttp.web.run_app(app, host="0.0.0.0", port=7861)
