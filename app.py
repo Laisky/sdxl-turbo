@@ -98,4 +98,4 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
 if __name__ == "__main__":
     app = aiohttp.web.Application()
     app.add_routes([aiohttp.web.post("/predict", handler)])
-    aiohttp.web.run_app(app, host="0.0.0.0", port=7861)
+    aiohttp.web.run_app(app, host="100.102.187.66", port=7861)
