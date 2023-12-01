@@ -50,13 +50,25 @@ pipes = {
 
 
 async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    """draw image with text or image by sdxl-turbo
+
+    HTTP POST:
+    ::
+        {
+            "text": "panda"
+            "image": "data:image/png;base64,xxxxx"
+        }
+
+    Returns:
+        image bytes in png format
+    """
     data = await request.json()
     assert data["text"], "text is required"
     prompt = data["text"]
 
     generator = torch.Generator(DEVICE).manual_seed(random.randint(0, 1000000))
 
-    resp: aiohttp.web.Response
+    result_pil_image: Image.Image
     if data.get("image"):
         base64_image: str = data["image"]
         base64_image = base64_image.removeprefix("data:image/png;base64,")
@@ -74,11 +86,6 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
             strength=0.8,
             num_inference_steps=4,
         ).images[0]
-
-        # convert to png
-        byte_arr = io.BytesIO()
-        result_pil_image.save(byte_arr, format="PNG")
-        resp = aiohttp.web.Response(body=byte_arr.getvalue(), content_type="image/png")
     else:
         result_pil_image = pipes["txt2img"](
             prompt=prompt,
@@ -89,11 +96,11 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
             strength=0.1,
             num_inference_steps=4,
         ).images[0]
-        # convert to png
-        byte_arr = io.BytesIO()
-        result_pil_image.save(byte_arr, format="PNG")
-        resp = aiohttp.web.Response(body=byte_arr.getvalue(), content_type="image/png")
 
+    # convert to png
+    byte_arr = io.BytesIO()
+    result_pil_image.save(byte_arr, format="PNG")
+    resp = aiohttp.web.Response(body=byte_arr.getvalue(), content_type="image/png")
     return resp
 
 
