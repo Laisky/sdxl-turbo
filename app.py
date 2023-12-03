@@ -105,6 +105,6 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
 
 
 if __name__ == "__main__":
-    app = aiohttp.web.Application(client_max_size=1024**2*10)
+    app = aiohttp.web.Application(client_max_size=1024**2*100)
     app.add_routes([aiohttp.web.post("/predict", handler)])
     aiohttp.web.run_app(app, host="0.0.0.0", port=7861)
