@@ -23,6 +23,7 @@ import io
 import torch
 import aiohttp.web
 import random
+import json
 
 DEVICE: str
 if torch.cuda.is_available():
@@ -65,42 +66,52 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
     data = await request.json()
     assert data["text"], "text is required"
     prompt = data["text"]
+    n_images = data.get("n", 1)
 
     generator = torch.Generator(DEVICE).manual_seed(random.randint(0, 1000000))
+    response = {
+        "images": [],
+    }
 
     result_pil_image: Image.Image
-    if data.get("image"):
-        base64_image: str = data["image"]
-        base64_image = base64_image.removeprefix("data:image/png;base64,")
-        image_bytes = base64.b64decode(base64_image)
-        src_image = load_image(Image.open(io.BytesIO(image_bytes)))
+    for _ in range(n_images):
+        if data.get("image"):
+            base64_image: str = data["image"]
+            base64_image = base64_image.removeprefix("data:image/png;base64,")
+            image_bytes = base64.b64decode(base64_image)
+            src_image = load_image(Image.open(io.BytesIO(image_bytes)))
 
-        # draw image
-        result_pil_image = pipes["img2img"](
-            prompt=prompt,
-            image=src_image,
-            generator=generator,
-            height=1024,
-            width=1024,
-            guidance_scale=0.5,
-            strength=0.8,
-            num_inference_steps=4,
-        ).images[0]
-    else:
-        result_pil_image = pipes["txt2img"](
-            prompt=prompt,
-            generator=generator,
-            height=512,
-            width=512,
-            guidance_scale=0.5,
-            strength=0.1,
-            num_inference_steps=4,
-        ).images[0]
+            # draw image
+            result_pil_image = pipes["img2img"](
+                prompt=prompt,
+                image=src_image,
+                generator=generator,
+                height=1024,
+                width=1024,
+                guidance_scale=0.5,
+                strength=0.8,
+                num_inference_steps=4,
+            ).images[0]
+        else:
+            result_pil_image = pipes["txt2img"](
+                prompt=prompt,
+                generator=generator,
+                height=512,
+                width=512,
+                guidance_scale=0.5,
+                strength=0.1,
+                num_inference_steps=4,
+            ).images[0]
 
-    # convert to png
-    byte_arr = io.BytesIO()
-    result_pil_image.save(byte_arr, format="PNG")
-    resp = aiohttp.web.Response(body=byte_arr.getvalue(), content_type="image/png")
+        # convert to png
+        byte_arr = io.BytesIO()
+        result_pil_image.save(byte_arr, format="PNG")
+        response["images"].append(
+            f"data:image/png;base64,{base64.b64encode(byte_arr.getvalue()).decode()}"
+        )
+
+
+    resp = aiohttp.web.Response(body=json.dumps(response), content_type="application/json")
     return resp
 
 
