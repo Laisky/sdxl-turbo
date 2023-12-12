@@ -2,9 +2,7 @@ import os
 
 os.environ["HTTP_PROXY"] = "http://100.122.41.16:17777"
 os.environ["HTTPS_PROXY"] = "http://100.122.41.16:17777"
-os.environ[
-    "NO_PROXY"
-] = "localhost,127.0.0.1,100.64.0.0/10,192.168.0.0/16,10.0.0.0/8,127.0.0.0/8,snake-carp.ts.net"
+os.environ["NO_PROXY"] = "localhost,127.0.0.1,100.64.0.0/10,192.168.0.0/16,10.0.0.0/8,127.0.0.0/8,snake-carp.ts.net"
 os.environ["http_proxy"] = "http://100.122.41.16:17777"
 os.environ["https_proxy"] = "http://100.122.41.16:17777"
 os.environ[
@@ -16,6 +14,7 @@ from diffusers.pipelines.auto_pipeline import (
     AutoPipelineForText2Image,
     AutoPipelineForImage2Image,
 )
+from typing import Dict, List
 from diffusers.utils.loading_utils import load_image
 from PIL import Image
 import base64
@@ -24,6 +23,7 @@ import torch
 import aiohttp.web
 import random
 import json
+from pipeline_demofusion_sdxl import DemoFusionSDXLPipeline
 
 DEVICE: str
 if torch.cuda.is_available():
@@ -39,12 +39,21 @@ pipes = {
         "stabilityai/sdxl-turbo",
         torch_dtype=torch.float16,
         variant="fp16",
+        safety_checker=None,
         requires_safety_checker=False,
     ).to(DEVICE),
     "img2img": AutoPipelineForImage2Image.from_pretrained(
         "stabilityai/sdxl-turbo",
         torch_dtype=torch.float16,
         variant="fp16",
+        safety_checker=None,
+        requires_safety_checker=False,
+    ).to(DEVICE),
+    "demofusion": DemoFusionSDXLPipeline.from_pretrained(
+        "stabilityai/sdxl-turbo",
+        torch_dtype=torch.float16,
+        variant="fp16",
+        safety_checker=None,
         requires_safety_checker=False,
     ).to(DEVICE),
 }
@@ -69,7 +78,7 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
     n_images = data.get("n", 1)
 
     generator = torch.Generator(DEVICE).manual_seed(random.randint(0, 1000000))
-    response = {
+    response: Dict[str, List] = {
         "images": [],
     }
 
@@ -110,12 +119,13 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
             f"data:image/png;base64,{base64.b64encode(byte_arr.getvalue()).decode()}"
         )
 
-
-    resp = aiohttp.web.Response(body=json.dumps(response), content_type="application/json")
+    resp = aiohttp.web.Response(
+        body=json.dumps(response), content_type="application/json"
+    )
     return resp
 
 
 if __name__ == "__main__":
-    app = aiohttp.web.Application(client_max_size=1024**2*100)
+    app = aiohttp.web.Application(client_max_size=1024**2 * 30)
     app.add_routes([aiohttp.web.post("/predict", handler)])
     aiohttp.web.run_app(app, host="0.0.0.0", port=7861)
