@@ -2,3 +2,5 @@
 /activate
 /.vscode
 /.mypy_cache
+
+*.pyc
