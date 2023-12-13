@@ -40,7 +40,7 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
         {
             "n": 1,
             "model": "sdxl-turbo",
-            "prompt": "panda"
+            "text": "panda"
             "image": "data:image/png;base64,xxxxx"
         }
 
@@ -48,8 +48,10 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
         image bytes in png format
     """
     data = await request.json()
-    assert data["prompt"], "prompt is required"
+    assert data["text"], "prompt is required"
     assert isinstance(data["prompt"], str), "prompt must be string"
+
+    prompt = data["text"]
     n_images = data.get("n", 1)
 
 
@@ -58,14 +60,14 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
     if model == "sdxl-turbo":
         if data.get("image"):
             images = sdxlturbo.img2img(
-                prompt=data["prompt"],
+                prompt=prompt,
                 negative_prompt=data.get("negative_prompt"),
                 b64img=data["image"],
                 n_images=n_images,
             )
         else:
             images = sdxlturbo.txt2img(
-                prompt=data["prompt"],
+                prompt=prompt,
                 negative_prompt=data.get("negative_prompt"),
                 n_images=n_images,
             )
