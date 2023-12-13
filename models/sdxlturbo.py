@@ -63,9 +63,9 @@ def txt2img(prompt: str, negative_prompt: str, n_images: int = 1) -> List[Image.
         width=512,
         guidance_scale=0.5,
         strength=0.1,
-        num_inference_steps=4,
+        num_inference_steps=6,
         num_images_per_prompt=n_images,
-    ).image
+    ).images
 
 
 def img2img(
@@ -98,4 +98,4 @@ def img2img(
         strength=0.8,
         num_inference_steps=4,
         num_images_per_prompt=n_images,
-    ).image
+    ).images
