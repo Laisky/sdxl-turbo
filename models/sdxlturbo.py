@@ -96,6 +96,6 @@ def img2img(
         width=1024,
         guidance_scale=0.5,
         strength=0.8,
-        num_inference_steps=4,
+        num_inference_steps=6,
         num_images_per_prompt=n_images,
     ).images
