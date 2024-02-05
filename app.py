@@ -54,7 +54,6 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
     prompt = data["text"]
     n_images = data.get("n", 1)
 
-
     images: List[Image.Image] = []
     model = data.get("model", "sdxl-turbo")
     if model == "sdxl-turbo":
