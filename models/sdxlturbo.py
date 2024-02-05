@@ -3,6 +3,7 @@ import io
 import tempfile
 import random
 from typing import List
+import gc
 
 import torch
 from diffusers.pipelines.auto_pipeline import (
@@ -47,8 +48,9 @@ pipes = {
         variant="fp16",
         safety_checker=None,
         requires_safety_checker=False,
-    ),
+    ).to(DEVICE),
 }
+
 
 
 def txt2img(prompt: str, negative_prompt: str, n_images: int = 1) -> List[Image.Image]:
@@ -124,11 +126,24 @@ def img2video(b64img: str, prompt: str, negative_prompt: str) -> bytes:
     logger.debug(f"img2video with {prompt=}, {negative_prompt=}")
     b64img = b64img.removeprefix("data:image/png;base64,")
     image_bytes = base64.b64decode(b64img)
-    src_image = load_image(Image.open(io.BytesIO(image_bytes)))
+    image = load_image(Image.open(io.BytesIO(image_bytes)))
+    # image = image.resize((1024, 576))
 
     generator = torch.manual_seed(42)
+
+    # Perform GPU memory cleanup
+    gc.collect()
+    torch.cuda.empty_cache()
+
+
     frames = pipes["img2video"](
-        src_image, decode_chunk_size=8, generator=generator
+        image,
+        decode_chunk_size=3,
+        generator=generator,
+        num_frames=10,
+        num_inference_steps=6,
+        motion_bucket_id=180,
+        noise_aug_strength=0.3
     ).frames[0]
 
     with tempfile.NamedTemporaryFile(suffix=".mp4") as f:

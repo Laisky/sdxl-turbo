@@ -5,3 +5,4 @@ aiohttp
 transformers
 accelerate
 pillow
+opencv-python

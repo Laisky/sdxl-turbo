@@ -2,14 +2,14 @@ import os
 
 os.environ["HTTP_PROXY"] = "http://100.122.41.16:17777"
 os.environ["HTTPS_PROXY"] = "http://100.122.41.16:17777"
-os.environ[
-    "NO_PROXY"
-] = "localhost,127.0.0.1,100.64.0.0/10,192.168.0.0/16,10.0.0.0/8,127.0.0.0/8,snake-carp.ts.net"
+os.environ["NO_PROXY"] = (
+    "localhost,127.0.0.1,100.64.0.0/10,192.168.0.0/16,10.0.0.0/8,127.0.0.0/8,snake-carp.ts.net"
+)
 os.environ["http_proxy"] = "http://100.122.41.16:17777"
 os.environ["https_proxy"] = "http://100.122.41.16:17777"
-os.environ[
-    "no_proxy"
-] = "localhost,127.0.0.1,100.64.0.0/10,192.168.0.0/16,10.0.0.0/8,127.0.0.0/8,snake-carp.ts.net"
+os.environ["no_proxy"] = (
+    "localhost,127.0.0.1,100.64.0.0/10,192.168.0.0/16,10.0.0.0/8,127.0.0.0/8,snake-carp.ts.net"
+)
 
 
 import base64
@@ -55,6 +55,7 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
     n_images = data.get("n", 1)
 
     images: List[Image.Image] = []
+    videos: List[bytes] = []
     model = data.get("model", "sdxl-turbo")
     if model == "sdxl-turbo":
         if data.get("image"):
@@ -70,17 +71,31 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
                 negative_prompt=data.get("negative_prompt"),
                 n_images=n_images,
             )
+    elif model == "svd-xt":
+        video = sdxlturbo.img2video(
+            b64img=data["image"],
+            prompt=prompt,
+            negative_prompt=data.get("negative_prompt"),
+        )
+        videos = [video]
+    else:
+        raise ValueError(f"there is no model named {model}")
 
-    response: Dict[str, List] = {
-        "images": [],
-    }
+    response: Dict[str, List] = {}
 
     # convert to png
     for img in images:
+        response.setdefault("images", [])
         byte_arr = io.BytesIO()
         img.save(byte_arr, format="PNG")
         response["images"].append(
             f"data:image/png;base64,{base64.b64encode(byte_arr.getvalue()).decode()}"
+        )
+
+    for video in videos:
+        response.setdefault("videos", [])
+        response["videos"].append(
+            f"data:video/mp4;base64,{base64.b64encode(video).decode()}",
         )
 
     resp = aiohttp.web.Response(
