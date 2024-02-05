@@ -1,5 +1,6 @@
 import base64
 import io
+import tempfile
 import random
 from typing import List
 
@@ -8,7 +9,8 @@ from diffusers.pipelines.auto_pipeline import (
     AutoPipelineForImage2Image,
     AutoPipelineForText2Image,
 )
-from diffusers.utils.loading_utils import load_image
+from diffusers import StableVideoDiffusionPipeline
+from diffusers.utils import load_image, export_to_video
 from PIL import Image
 
 from .base import logger
@@ -39,6 +41,13 @@ pipes = {
         safety_checker=None,
         requires_safety_checker=False,
     ).to(DEVICE),
+    "img2video": StableVideoDiffusionPipeline.from_pretrained(
+        "stabilityai/stable-video-diffusion-img2vid-xt",
+        torch_dtype=torch.float16,
+        variant="fp16",
+        safety_checker=None,
+        requires_safety_checker=False,
+    ),
 }
 
 
@@ -99,3 +108,29 @@ def img2img(
         num_inference_steps=6,
         num_images_per_prompt=n_images,
     ).images
+
+
+def img2video(b64img: str, prompt: str, negative_prompt: str) -> bytes:
+    """draw image with text by sdxl-turbo
+
+    Args:
+        b64img (str): image data encoded in base64
+        prompt (str): prompt text
+        negative_prompt (str): negative prompt text
+
+    Returns:
+        bytes: video data encoded in bytes
+    """
+    logger.debug(f"img2video with {prompt=}, {negative_prompt=}")
+    b64img = b64img.removeprefix("data:image/png;base64,")
+    image_bytes = base64.b64decode(b64img)
+    src_image = load_image(Image.open(io.BytesIO(image_bytes)))
+
+    generator = torch.manual_seed(42)
+    frames = pipes["img2video"](
+        src_image, decode_chunk_size=8, generator=generator
+    ).frames[0]
+
+    with tempfile.NamedTemporaryFile(suffix=".mp4") as f:
+        export_to_video(frames, f.name, fps=7)
+        return f.read()
