@@ -49,7 +49,7 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """
     data = await request.json()
     assert data["text"], "prompt is required"
-    assert isinstance(data["prompt"], str), "prompt must be string"
+    assert isinstance(data["text"], str), "prompt must be string"
 
     prompt = data["text"]
     n_images = data.get("n", 1)
