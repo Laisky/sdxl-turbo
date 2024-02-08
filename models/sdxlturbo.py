@@ -4,6 +4,7 @@ import tempfile
 import random
 from typing import List
 import gc
+import os
 
 import torch
 from diffusers.pipelines.auto_pipeline import (
@@ -64,6 +65,9 @@ def txt2img(prompt: str, negative_prompt: str, n_images: int = 1) -> List[Image.
     Returns:
         List[Image.Image]: list of PIL image
     """
+    if not prompt or not isinstance(prompt, str):
+        raise ValueError("prompt should be a non-empty string")
+
     logger.debug(f"txt2img with {prompt=}, {negative_prompt=}, {n_images=}")
     generator = torch.Generator(DEVICE).manual_seed(random.randint(0, 1000000))
     return pipes["txt2img"](
@@ -93,6 +97,9 @@ def img2img(
     Returns:
         List[Image.Image]: list of PIL image
     """
+    if not prompt or not isinstance(prompt, str):
+        raise ValueError("prompt should be a non-empty string")
+
     logger.debug(f"img2img with {prompt=}, {negative_prompt=}, {n_images=}")
     generator = torch.Generator(DEVICE).manual_seed(random.randint(0, 1000000))
     b64img = b64img.removeprefix("data:image/png;base64,")
@@ -112,18 +119,16 @@ def img2img(
     ).images
 
 
-def img2video(b64img: str, prompt: str, negative_prompt: str) -> bytes:
+def img2video(b64img: str) -> bytes:
     """draw image with text by sdxl-turbo
 
     Args:
         b64img (str): image data encoded in base64
-        prompt (str): prompt text
-        negative_prompt (str): negative prompt text
 
     Returns:
         bytes: video data encoded in bytes
     """
-    logger.debug(f"img2video with {prompt=}, {negative_prompt=}")
+    logger.debug(f"img2video")
     b64img = b64img.removeprefix("data:image/png;base64,")
     image_bytes = base64.b64decode(b64img)
     image = load_image(Image.open(io.BytesIO(image_bytes)))
@@ -137,7 +142,7 @@ def img2video(b64img: str, prompt: str, negative_prompt: str) -> bytes:
 
 
     frames = pipes["img2video"](
-        image,
+        image=image,
         decode_chunk_size=3,
         generator=generator,
         num_frames=10,
@@ -146,6 +151,11 @@ def img2video(b64img: str, prompt: str, negative_prompt: str) -> bytes:
         noise_aug_strength=0.3
     ).frames[0]
 
-    with tempfile.NamedTemporaryFile(suffix=".mp4") as f:
-        export_to_video(frames, f.name, fps=7)
-        return f.read()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        fpath = os.path.join(tmpdir, "video.mp4")
+        export_to_video(frames, fpath, fps=7)
+        with open(fpath, "rb") as f:
+            content = f.read()
+
+        logger.info(f"generate video size: {len(content)} bytes")
+        return content

@@ -48,10 +48,8 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
         image bytes in png format
     """
     data = await request.json()
-    assert data["text"], "prompt is required"
-    assert isinstance(data["text"], str), "prompt must be string"
 
-    prompt = data["text"]
+    prompt = data.get("text")
     n_images = data.get("n", 1)
 
     images: List[Image.Image] = []
@@ -74,8 +72,6 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
     elif model == "svd-xt":
         video = sdxlturbo.img2video(
             b64img=data["image"],
-            prompt=prompt,
-            negative_prompt=data.get("negative_prompt"),
         )
         videos = [video]
     else:
