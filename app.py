@@ -103,11 +103,7 @@ else:
 
 async def text_predict(request: aiohttp.web.Request) -> aiohttp.web.Response:
     data = await request.json()
-    prompt = data.get("text")
-    assert isinstance(prompt, str) and prompt, "prompt should be a non-empty string"
-    assert prompt, "prompt should be a non-empty string"
-
-    completion = gemma_completions(prompt)
+    completion = gemma_completions(data)
 
     response = {
         "completion": completion,

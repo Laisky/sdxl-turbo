@@ -3,7 +3,7 @@ kipp
 git+https://github.com/Laisky/diffusers.git@laisky#egg=diffusers
 aiohttp
 -f https://download.pytorch.org/whl/torch_stable.html torch==2.1.1+cu118
-transformers
+transformers>=4.36.2
 accelerate
 pillow
 opencv-python
