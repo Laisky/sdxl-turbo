@@ -11,14 +11,19 @@ from diffusers.pipelines.auto_pipeline import (
     AutoPipelineForImage2Image,
     AutoPipelineForText2Image,
 )
-from diffusers import StableVideoDiffusionPipeline
+from diffusers import StableVideoDiffusionPipeline, DiffusionPipeline
 from diffusers.utils import load_image, export_to_video
 from PIL import Image
+
 
 from .base import logger
 
 logger = logger.getChild("sdxl_turbo")
 
+
+# https://huggingface.co/settings/tokens
+# from huggingface_hub import login
+# login()
 
 DEVICE: str
 if torch.cuda.is_available():
@@ -29,6 +34,13 @@ else:
     DEVICE = "cpu"
 
 pipes = {
+    "img2video": DiffusionPipeline.from_pretrained(
+        "stabilityai/stable-video-diffusion-img2vid-xt-1-1",
+        torch_dtype=torch.float16,
+        variant="fp16",
+        safety_checker=None,
+        requires_safety_checker=False,
+    ).to(DEVICE),
     "txt2img": AutoPipelineForText2Image.from_pretrained(
         "stabilityai/sdxl-turbo",
         torch_dtype=torch.float16,
@@ -38,13 +50,6 @@ pipes = {
     ).to(DEVICE),
     "img2img": AutoPipelineForImage2Image.from_pretrained(
         "stabilityai/sdxl-turbo",
-        torch_dtype=torch.float16,
-        variant="fp16",
-        safety_checker=None,
-        requires_safety_checker=False,
-    ).to(DEVICE),
-    "img2video": StableVideoDiffusionPipeline.from_pretrained(
-        "stabilityai/stable-video-diffusion-img2vid-xt",
         torch_dtype=torch.float16,
         variant="fp16",
         safety_checker=None,
@@ -145,8 +150,8 @@ def img2video(b64img: str) -> bytes:
         image=image,
         decode_chunk_size=3,
         generator=generator,
-        num_frames=10,
-        num_inference_steps=6,
+        # num_frames=10,
+        num_inference_steps=10,
         motion_bucket_id=180,
         noise_aug_strength=0.3
     ).frames[0]
