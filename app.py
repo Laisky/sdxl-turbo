@@ -111,8 +111,9 @@ async def text_predict(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """
     data = await request.json()
 
-    ioloop = asyncio.get_event_loop()
-    completion = await ioloop.run_in_executor(executor, gemma_completions, data)
+    with asyncio.Lock():
+        ioloop = asyncio.get_event_loop()
+        completion = await ioloop.run_in_executor(executor, gemma_completions, data)
 
     response = {
         "completion": completion,

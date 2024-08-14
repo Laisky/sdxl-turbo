@@ -1,5 +1,6 @@
 from typing import Dict
 from textwrap import dedent
+import asyncio
 
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
