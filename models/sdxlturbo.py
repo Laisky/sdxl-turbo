@@ -14,6 +14,7 @@ from diffusers.pipelines.auto_pipeline import (
 from diffusers import StableVideoDiffusionPipeline, DiffusionPipeline
 from diffusers.utils import load_image, export_to_video
 from PIL import Image
+from kipp.decorator import timer
 
 
 from .base import logger
@@ -58,7 +59,7 @@ pipes = {
 }
 
 
-
+@timer
 def txt2img(prompt: str, negative_prompt: str, n_images: int = 1) -> List[Image.Image]:
     """draw image with text by sdxl-turbo
 
@@ -88,6 +89,7 @@ def txt2img(prompt: str, negative_prompt: str, n_images: int = 1) -> List[Image.
     ).images
 
 
+@timer
 def img2img(
     b64img: str, prompt: str, negative_prompt: str, n_images: int = 1
 ) -> List[Image.Image]:
@@ -124,6 +126,7 @@ def img2img(
     ).images
 
 
+@timer
 def img2video(b64img: str) -> bytes:
     """draw image with text by sdxl-turbo
 
@@ -145,7 +148,6 @@ def img2video(b64img: str) -> bytes:
     gc.collect()
     torch.cuda.empty_cache()
 
-
     frames = pipes["img2video"](
         image=image,
         decode_chunk_size=3,
@@ -153,7 +155,7 @@ def img2video(b64img: str) -> bytes:
         # num_frames=10,
         num_inference_steps=10,
         motion_bucket_id=180,
-        noise_aug_strength=0.3
+        noise_aug_strength=0.3,
     ).frames[0]
 
     with tempfile.TemporaryDirectory() as tmpdir:

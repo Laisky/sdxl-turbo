@@ -3,6 +3,7 @@ from textwrap import dedent
 
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
+from kipp.decorator import timer
 
 from .env import TOKEN
 
@@ -17,13 +18,18 @@ model = AutoModelForCausalLM.from_pretrained(
     token=TOKEN,
 )
 
+
+@timer
 def predict(data: Dict) -> str:
-    chat = data['messages']
-    input_ids = tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
+    chat = data["messages"]
+    input_ids = tokenizer.apply_chat_template(
+        chat, tokenize=False, add_generation_prompt=True
+    )
     input_ids = tokenizer(input_ids, return_tensors="pt").to("cuda")
 
-    outputs = model.generate(max_new_tokens=data['max_tokens'], **input_ids)
+    outputs = model.generate(max_new_tokens=data["max_tokens"], **input_ids)
     return tokenizer.decode(outputs[0])
+
 
 if __name__ == "__main__":
     system_prompt = dedent(

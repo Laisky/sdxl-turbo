@@ -16,10 +16,13 @@ import base64
 import io
 import json
 from typing import Dict, List
+import asyncio
+
 
 import aiohttp.web
 import torch
 from PIL import Image
+from kipp.utils import ThreadPoolExecutor
 
 # from models import sdxlturbo
 from models.gemma import predict as gemma_completions
@@ -32,6 +35,8 @@ elif torch.backends.mps.is_available():
 else:
     DEVICE = "cpu"
 
+
+executor = ThreadPoolExecutor(max_workers=10)
 
 # async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
 #     """draw image with prompt or image by sdxl-turbo
@@ -102,8 +107,12 @@ else:
 
 
 async def text_predict(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    """predict text completions by gemma
+    """
     data = await request.json()
-    completion = gemma_completions(data)
+
+    ioloop = asyncio.get_event_loop()
+    completion = await ioloop.run_in_executor(executor, gemma_completions, data)
 
     response = {
         "completion": completion,
