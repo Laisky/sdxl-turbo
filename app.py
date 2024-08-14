@@ -22,6 +22,7 @@ import torch
 from PIL import Image
 
 from models import sdxlturbo
+from models.gemma import predict as gemma_completions
 
 DEVICE: str
 if torch.cuda.is_available():
@@ -100,7 +101,27 @@ async def handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
     return resp
 
 
+async def text_predict(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    data = await request.json()
+    prompt = data.get("text")
+    assert isinstance(prompt, str) and prompt, "prompt should be a non-empty string"
+    assert prompt, "prompt should be a non-empty string"
+
+    completion = gemma_completions(prompt)
+
+    response = {
+        "completion": completion,
+    }
+    resp = aiohttp.web.Response(
+        body=json.dumps(response), content_type="application/json"
+    )
+    return resp
+
+
 if __name__ == "__main__":
     app = aiohttp.web.Application(client_max_size=1024**2 * 30)
+
     app.add_routes([aiohttp.web.post("/predict", handler)])
+    app.add_routes([aiohttp.web.post("/chat/completions", text_predict)])
+
     aiohttp.web.run_app(app, host="0.0.0.0", port=7861)
