@@ -1,5 +1,6 @@
 kipp
-diffusers
+# diffusers
+git+https://github.com/Laisky/diffusers.git@laisky#egg=diffusers
 aiohttp
 -f https://download.pytorch.org/whl/torch_stable.html torch==2.1.1+cu118
 transformers
